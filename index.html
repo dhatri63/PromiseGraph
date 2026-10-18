@@ -1,0 +1,7033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>PromiseGraph</title>
+
+<script src="cytoscape.min.js"></script>
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+
+  font-family:
+    Inter,
+    Arial,
+    sans-serif;
+
+  color: #f5f6fb;
+
+  background:
+    radial-gradient(
+      circle at 10% 10%,
+      rgba(91,110,225,.18),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 90% 15%,
+      rgba(69,184,160,.12),
+      transparent 30%
+    ),
+    #101522;
+}
+
+.shell {
+  width: min(1180px, 92%);
+  margin: auto;
+  padding: 38px 0 70px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  gap: 20px;
+
+  margin-bottom: 28px;
+}
+
+.brand h1 {
+  margin: 0;
+
+  font-size: 38px;
+  letter-spacing: -1px;
+}
+
+.subtitle,
+.muted {
+  color: #aeb6ca;
+}
+
+.subtitle {
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+.live-badge,
+.context-live-badge {
+  border-radius: 999px;
+
+  color: #8ee0cb;
+
+  background:
+    rgba(69,184,160,.12);
+
+  border:
+    1px solid
+    rgba(91,209,178,.3);
+}
+
+.live-badge {
+  padding: 8px 13px;
+  font-size: 13px;
+}
+
+.panel {
+  margin-top: 20px;
+  padding: 22px;
+
+  border-radius: 18px;
+
+  background:
+    rgba(28,35,53,.78);
+
+  border:
+    1px solid
+    rgba(170,185,220,.16);
+
+  box-shadow:
+    0 18px 45px
+    rgba(0,0,0,.2);
+
+  backdrop-filter:
+    blur(14px);
+}
+
+.panel h2,
+.panel h3 {
+  margin-top: 0;
+}
+
+
+/* ==========================================
+   COMMITMENTS
+   ========================================== */
+
+.commitments {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(215px,1fr)
+    );
+
+  gap: 14px;
+
+  margin-top: 18px;
+}
+
+.commitment {
+  padding: 17px;
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(43,53,79,.92),
+      rgba(33,42,64,.92)
+    );
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-left:
+    4px solid #58c49a;
+}
+
+.commitment.failed {
+  border-left-color:
+    #de6672;
+}
+
+.commitment.at-risk {
+  border-left-color:
+    #dda15e;
+}
+
+.status-failed {
+  color: #ef8891;
+}
+
+.status-risk {
+  color: #edbc7e;
+}
+
+.priority-critical {
+  color: #ee7c87;
+}
+
+.priority-high {
+  color: #e5b267;
+}
+
+
+/* ==========================================
+   BUTTONS
+   ========================================== */
+
+.actions,
+.context-footer-actions {
+  display: flex;
+
+  gap: 10px;
+
+  flex-wrap: wrap;
+}
+
+.actions {
+  margin-top: 18px;
+}
+
+button {
+  border: 0;
+
+  cursor: pointer;
+
+  border-radius: 10px;
+
+  padding: 12px 18px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  transition: .18s;
+}
+
+button:hover {
+  transform:
+    translateY(-1px);
+}
+
+.primary {
+  color: #fff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7167dc,
+      #5c76db
+    );
+
+  box-shadow:
+    0 8px 22px
+    rgba(91,110,225,.24);
+}
+
+.secondary {
+  color: #dbe1ef;
+
+  background:
+    rgba(255,255,255,.06);
+
+  border:
+    1px solid
+    rgba(255,255,255,.1);
+}
+
+
+/* ==========================================
+   GRAPH
+   ========================================== */
+
+.graph-header {
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    flex-start;
+
+  gap: 20px;
+
+  margin-bottom: 12px;
+}
+
+.legend {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  justify-content:
+    flex-end;
+}
+
+.legend span {
+  font-size: 11px;
+
+  color: #c9cfdd;
+
+  border:
+    1px solid
+    rgba(255,255,255,.09);
+
+  background:
+    rgba(255,255,255,.035);
+
+  padding: 6px 9px;
+
+  border-radius: 999px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+
+  display: inline-block;
+
+  border-radius: 50%;
+
+  margin-right: 6px;
+}
+
+.commitment-dot {
+  background: #6f7fdf;
+}
+
+.vendor-dot {
+  background: #b080d6;
+}
+
+.repair-dot {
+  background: #4bb59f;
+}
+
+.type-dot {
+  background: #718096;
+}
+
+.capability-dot {
+  background: #66a7c9;
+}
+
+.constraint-dot {
+  background: #d96d7d;
+}
+
+.resource-dot {
+  background: #d8a25f;
+}
+
+.memory-dot {
+  background: #8b83df;
+}
+
+#cy {
+  height: 540px;
+  width: 100%;
+
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(14,19,31,.82),
+      rgba(20,28,43,.82)
+    );
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+}
+
+.graph-info {
+  margin-top: 12px;
+
+  color: #bcc4d6;
+
+  min-height: 22px;
+
+  font-size: 14px;
+}
+
+
+/* ==========================================
+   RECOVERY
+   ========================================== */
+
+.recovery {
+  display: none;
+}
+
+.impact-banner {
+  padding: 14px 16px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(221,161,94,.1);
+
+  border:
+    1px solid
+    rgba(221,161,94,.23);
+
+  color: #eac18d;
+
+  margin-bottom: 20px;
+}
+
+.options {
+  display: grid;
+  gap: 13px;
+}
+
+.option {
+  padding: 17px;
+
+  background:
+    rgba(41,50,74,.78);
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius: 14px;
+}
+
+.option.rejected {
+  border-left:
+    4px solid #d96372;
+}
+
+.option.recommended {
+  border-left:
+    4px solid #55bf91;
+
+  background:
+    linear-gradient(
+      120deg,
+      rgba(46,91,78,.3),
+      rgba(41,50,74,.8)
+    );
+}
+
+.option-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.option-meta {
+  margin-top: 6px;
+  color: #bac2d3;
+}
+
+.badge {
+  display: inline-block;
+
+  margin-top: 10px;
+
+  padding: 5px 9px;
+
+  border-radius: 7px;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bad {
+  color: #f2a5ad;
+
+  background:
+    rgba(217,99,114,.13);
+}
+
+.good {
+  color: #8ce0b9;
+
+  background:
+    rgba(85,191,145,.13);
+}
+
+.reason-bad {
+  color: #ef9ba4;
+}
+
+.reason-good {
+  color: #e6bb7e;
+}
+
+
+/* ==========================================
+   MANUAL SIMULATION
+   ========================================== */
+
+.simulation-control {
+  margin-top: 18px;
+
+  max-width: 520px;
+}
+
+.simulation-control label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #c7cede;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.simulation-control select,
+.context-panel input,
+.agent-input textarea {
+  border:
+    1px solid
+    rgba(255,255,255,.12);
+
+  background:
+    rgba(22,29,46,.92);
+
+  color: #f5f6fb;
+
+  outline: none;
+}
+
+.simulation-control select {
+  width: 100%;
+
+  padding: 12px 14px;
+
+  border-radius: 10px;
+
+  font-size: 14px;
+}
+
+
+/* ==========================================
+   AGENT
+   ========================================== */
+
+.agent-input {
+  display: grid;
+
+  gap: 12px;
+
+  margin-top: 18px;
+}
+
+.agent-input textarea {
+  width: 100%;
+
+  min-height: 90px;
+
+  padding: 14px;
+
+  resize: vertical;
+
+  border-radius: 12px;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+.agent-input button {
+  width: fit-content;
+}
+
+.agent-summary-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0,1fr)
+    );
+
+  gap: 10px;
+
+  margin-top: 18px;
+}
+
+.agent-summary-item {
+  padding: 12px;
+
+  border-radius: 12px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  background:
+    rgba(255,255,255,.035);
+
+  display: grid;
+
+  gap: 6px;
+}
+
+.summary-label,
+.reasoning-subtitle,
+.context-label {
+  font-size: 10px;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    .08em;
+
+  opacity: .65;
+}
+
+.agent-recommendation {
+  margin-top: 14px;
+
+  padding: 14px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(63,159,140,.09);
+
+  border:
+    1px solid
+    rgba(112,199,182,.2);
+}
+
+.agent-explanation {
+  margin-top: 14px;
+
+  line-height: 1.6;
+}
+
+.agent-warning {
+  margin-top: 15px;
+
+  padding: 14px;
+
+  border-radius: 12px;
+
+  border:
+    1px solid
+    rgba(211,155,89,.25);
+
+  background:
+    rgba(211,155,89,.07);
+}
+
+.agent-action-area {
+  margin-top: 17px;
+}
+
+
+/* ==========================================
+   AGENT TOOL ROUTE
+   ========================================== */
+
+.agent-route {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(113,103,220,.10),
+      rgba(69,184,160,.06)
+    );
+
+  border:
+    1px solid
+    rgba(132,145,224,.20);
+}
+
+.agent-route-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.agent-route-head strong {
+  font-size: 14px;
+}
+
+.agent-route-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.agent-route-badge {
+  padding: 5px 8px;
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .03em;
+
+  color: #dfe4f4;
+
+  border:
+    1px solid
+    rgba(255,255,255,.10);
+
+  background:
+    rgba(255,255,255,.04);
+}
+
+.agent-route-badge.ai {
+  color: #c9c6ff;
+
+  border-color:
+    rgba(137,128,235,.28);
+
+  background:
+    rgba(113,103,220,.11);
+}
+
+.agent-route-badge.graph {
+  color: #91e2cf;
+
+  border-color:
+    rgba(91,209,178,.24);
+
+  background:
+    rgba(69,184,160,.09);
+}
+
+.agent-route-caption {
+  margin-top: 8px;
+
+  color: #aeb6ca;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.agent-route-steps {
+  margin-top: 11px;
+
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.agent-route-step {
+  padding: 7px 9px;
+
+  border-radius: 8px;
+
+  color: #e5e8f3;
+
+  background:
+    rgba(21,27,43,.68);
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  font-size: 11px;
+  font-family:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+}
+
+.agent-route-arrow {
+  color: #7f8aa5;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .agent-route-head {
+    flex-direction: column;
+  }
+
+  .agent-route-badges {
+    justify-content: flex-start;
+  }
+}
+
+
+/* ==========================================
+   ORGANIZATIONAL MEMORY
+   ========================================== */
+
+.agent-memory {
+  margin-top: 14px;
+  padding: 15px;
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(104,94,196,.10),
+      rgba(54,142,129,.055)
+    );
+
+  border:
+    1px solid
+    rgba(139,131,223,.20);
+}
+
+.agent-memory-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.agent-memory-title {
+  display: grid;
+  gap: 4px;
+}
+
+.agent-memory-title strong {
+  font-size: 14px;
+}
+
+.agent-memory-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.agent-memory-badge {
+  padding: 5px 8px;
+  border-radius: 999px;
+
+  color: #d9d6ff;
+  background: rgba(126,116,215,.10);
+  border: 1px solid rgba(151,141,235,.23);
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+
+.agent-memory-badge.graph {
+  color: #91e2cf;
+  background: rgba(69,184,160,.08);
+  border-color: rgba(91,209,178,.20);
+}
+
+.agent-memory-body {
+  margin-top: 12px;
+}
+
+.agent-memory-record {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 16px;
+  align-items: center;
+
+  padding: 12px;
+  border-radius: 10px;
+
+  background: rgba(13,19,32,.48);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+.agent-memory-recovery {
+  margin-top: 3px;
+  color: #f0f2f8;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.agent-memory-commitment {
+  margin-top: 5px;
+  color: #99a4ba;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.agent-memory-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.agent-memory-meta span {
+  padding: 5px 7px;
+  border-radius: 7px;
+  color: #c9d0df;
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.055);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.agent-memory-note {
+  margin-top: 10px;
+  color: #9da7bb;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.agent-memory-empty {
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.025);
+  border: 1px dashed rgba(151,141,235,.18);
+  color: #aab3c5;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  .agent-memory-head {
+    flex-direction: column;
+  }
+
+  .agent-memory-badges {
+    justify-content: flex-start;
+  }
+
+  .agent-memory-record {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-memory-meta {
+    justify-content: flex-start;
+  }
+}
+
+
+/* ==========================================
+   EXPLAINABILITY
+   ========================================== */
+
+.reasoning-box {
+  margin-top: 20px;
+
+  padding: 17px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.1);
+
+  border-radius: 14px;
+
+  background:
+    rgba(255,255,255,.028);
+}
+
+.reasoning-title {
+  font-size: 16px;
+
+  font-weight: 700;
+
+  margin-bottom: 16px;
+}
+
+.reasoning-subtitle {
+  margin-bottom: 11px;
+}
+
+.evidence-path,
+.reason-checks {
+  display: grid;
+
+  gap: 9px;
+}
+
+.evidence-step {
+  display: flex;
+
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  font-size: 12px;
+}
+
+.evidence-node {
+  padding: 7px 9px;
+
+  border-radius: 8px;
+
+  background:
+    rgba(100,118,211,.12);
+
+  border:
+    1px solid
+    rgba(137,152,237,.22);
+}
+
+.evidence-arrow {
+  display: flex;
+
+  gap: 4px;
+
+  opacity: .65;
+}
+
+.evidence-arrow small {
+  font-size: 9px;
+}
+
+.reason-check {
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  gap: 15px;
+
+  padding: 10px 11px;
+
+  border-radius: 9px;
+
+  background:
+    rgba(255,255,255,.035);
+
+  font-size: 12px;
+}
+
+.timing-check {
+  display: block;
+}
+
+.timing-row {
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  gap: 15px;
+
+  padding: 6px 0;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.05);
+
+  font-size: 11px;
+}
+
+.timing-safe {
+  color: #8ce0b9;
+}
+
+.timing-impacts {
+  color: #e3bd83;
+}
+
+.timing-breaks {
+  color: #ef919a;
+}
+
+
+/* ==========================================
+   COMPANY CONTEXT
+   ========================================== */
+
+.context-panel {
+  display: none;
+
+  margin-top: 18px;
+
+  padding: 18px;
+
+  border-radius: 15px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.09);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(20,27,43,.82),
+      rgba(29,37,56,.72)
+    );
+}
+
+.context-panel.open {
+  display: block;
+}
+
+.context-header {
+  display: flex;
+
+  justify-content:
+    space-between;
+
+   align-items:
+    flex-start;
+
+  gap: 16px;
+
+  margin-bottom: 18px;
+}
+
+.context-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.context-description {
+  margin-top: 5px;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+.context-live-badge {
+  padding: 5px 9px;
+
+  font-size: 10px;
+
+  white-space: nowrap;
+}
+
+.context-summary {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0,1fr)
+    );
+
+  gap: 10px;
+}
+
+.context-summary > div,
+.supplier-context-card {
+  padding: 12px;
+
+  border-radius: 11px;
+
+  background:
+    rgba(255,255,255,.03);
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+}
+
+.context-summary > div {
+  display: grid;
+
+  gap: 6px;
+}
+
+.money-input {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+}
+
+.money-input input {
+  width: 100%;
+}
+
+.context-panel input {
+  padding: 9px 10px;
+
+  border-radius: 8px;
+
+  font-size: 13px;
+}
+
+.context-section-title {
+  margin: 20px 0 10px;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    .07em;
+
+  color:
+    #aeb6ca;
+}
+
+.context-map-note {
+  display: grid;
+  gap: 6px;
+
+  margin: 16px 0 4px;
+  padding: 12px 14px;
+
+  border-radius: 11px;
+
+  background:
+    rgba(92,118,219,.08);
+
+  border:
+    1px solid
+    rgba(113,103,220,.18);
+
+  color: #cbd3e5;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.context-map-note strong {
+  color: #eef1f8;
+  font-size: 12px;
+}
+
+.context-map-note b {
+  color: #aebaf4;
+}
+
+.supplier-context-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(220px,1fr)
+    );
+
+  gap: 10px;
+}
+
+.capability-groups {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(250px,1fr)
+    );
+
+  gap: 10px;
+}
+
+.capability-group {
+  padding: 12px;
+
+  border-radius: 11px;
+
+  background:
+    rgba(255,255,255,.025);
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+}
+
+.capability-group-title {
+  display: flex;
+
+  align-items: center;
+
+  justify-content:
+    space-between;
+
+  gap: 10px;
+
+  margin-bottom: 10px;
+
+  color: #d8deeb;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.capability-count {
+  padding: 3px 7px;
+
+  border-radius: 999px;
+
+  color: #aeb8cf;
+
+  background:
+    rgba(255,255,255,.05);
+
+  font-size: 9px;
+}
+
+.capability-group-copy {
+  min-width: 0;
+}
+
+.capability-group-main {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.capability-affects {
+  padding: 3px 6px;
+  border-radius: 999px;
+
+  color: #aebaf4;
+  background: rgba(113,103,220,.1);
+  border: 1px solid rgba(137,152,237,.16);
+
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.capability-group-subtitle {
+  margin-top: 4px;
+  color: #8f99ad;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.capability-list {
+  display: grid;
+
+  gap: 8px;
+}
+
+.recovery-capability-card {
+  padding: 11px;
+
+  border-radius: 10px;
+
+  background:
+    rgba(15,21,34,.48);
+
+  border:
+    1px solid
+    rgba(255,255,255,.055);
+}
+
+.capability-name {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content:
+    space-between;
+
+  gap: 10px;
+
+  margin-bottom: 10px;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  line-height: 1.35;
+}
+
+.capability-id {
+  flex: 0 0 auto;
+
+  padding: 3px 6px;
+
+  border-radius: 6px;
+
+  color: #9fa9c0;
+
+  background:
+    rgba(255,255,255,.045);
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.capability-meta {
+  margin: -3px 0 9px;
+  color: #8490a6;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.capability-fields {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2,minmax(0,1fr));
+
+  gap: 8px;
+}
+
+.capability-field {
+  display: grid;
+
+  gap: 5px;
+}
+
+.capability-field label {
+  color: #909aad;
+
+  font-size: 9px;
+
+  text-transform:
+    uppercase;
+}
+
+.capability-field input {
+  width: 100%;
+
+  min-width: 0;
+}
+
+.supplier-context-name {
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 13px;
+
+  font-weight: 700;
+}
+
+.supplier-status {
+  font-size: 10px;
+
+  padding: 4px 7px;
+
+  border-radius: 999px;
+
+  color: #8ce0b9;
+
+  background:
+    rgba(85,191,145,.1);
+}
+
+.supplier-fields {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3,1fr);
+
+  gap: 8px;
+}
+
+.supplier-field {
+  display: grid;
+
+  gap: 5px;
+}
+
+.supplier-field label {
+  font-size: 9px;
+
+  color: #909aad;
+
+  text-transform:
+    uppercase;
+}
+
+.supplier-field input {
+  width: 100%;
+
+  min-width: 0;
+}
+
+.context-footer {
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  gap: 15px;
+
+  margin-top: 17px;
+}
+
+.context-status {
+  font-size: 12px;
+}
+
+.context-status.success {
+  color: #8ce0b9;
+}
+
+.context-status.error {
+  color: #ef919a;
+}
+
+.context-note {
+  margin-top: 10px;
+
+  font-size: 11px;
+
+  color: #7f899d;
+}
+
+.legend {
+  align-items: flex-start;
+}
+
+.context-live-badge {
+  align-self: flex-start;
+}
+
+
+/* ==========================================
+   FINAL PRODUCT POLISH
+   ========================================== */
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% 4%, rgba(99,102,241,.15), transparent 31%),
+    radial-gradient(circle at 92% 9%, rgba(45,212,191,.09), transparent 27%),
+    linear-gradient(180deg, #0b1020 0%, #0d1322 55%, #0a0f1b 100%);
+}
+
+.shell {
+  width: min(1220px, calc(100% - 44px));
+  padding: 34px 0 72px;
+}
+
+.hero {
+  align-items: center;
+  margin-bottom: 26px;
+  padding: 4px 2px 10px;
+}
+
+.eyebrow {
+  margin-bottom: 9px;
+  color: #8f9cf0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.brand h1 {
+  font-size: clamp(36px, 5vw, 46px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1.8px;
+}
+
+.subtitle {
+  max-width: 690px;
+  margin-top: 10px;
+  color: #b7c0d3;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.hero-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 15px;
+}
+
+.hero-trust span {
+  padding: 6px 9px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 999px;
+  background: rgba(255,255,255,.028);
+  color: #929db2;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: #a6e8d7;
+  background: rgba(45, 212, 191, .075);
+  border-color: rgba(94, 234, 212, .2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #5eead4;
+  box-shadow: 0 0 0 4px rgba(94,234,212,.08);
+}
+
+.panel {
+  position: relative;
+  margin-top: 18px;
+  padding: 24px;
+  overflow: hidden;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(29,37,57,.82), rgba(22,29,45,.82));
+  border: 1px solid rgba(255,255,255,.075);
+  box-shadow: 0 16px 40px rgba(0,0,0,.16);
+  backdrop-filter: blur(16px);
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
+  pointer-events: none;
+}
+
+.panel h2 {
+  margin-bottom: 7px;
+  color: #f4f6fb;
+  font-size: 19px;
+  line-height: 1.25;
+  letter-spacing: -.25px;
+}
+
+.panel h3 {
+  color: #e5e9f3;
+}
+
+.panel > p.muted,
+.graph-header p.muted {
+  margin: 0;
+  max-width: 760px;
+  color: #8f99ad;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.commitments-panel {
+  padding-bottom: 23px;
+}
+
+.commitments {
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.commitment {
+  min-height: 126px;
+  padding: 16px;
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgba(40,49,72,.86), rgba(30,38,57,.88));
+  border-color: rgba(255,255,255,.055);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+}
+
+.commitment strong {
+  display: inline-block;
+  min-height: 40px;
+  color: #eef1f7;
+  line-height: 1.42;
+}
+
+.graph-panel {
+  padding-bottom: 18px;
+  border-color: rgba(112, 124, 235, .15);
+  box-shadow:
+    0 18px 46px rgba(0,0,0,.18),
+    0 0 44px rgba(76, 93, 210, .055);
+}
+
+.graph-panel::after {
+  content: "";
+  position: absolute;
+  top: -95px;
+  right: 8%;
+  width: 420px;
+  height: 180px;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse, rgba(99,102,241,.16), rgba(45,212,191,.045) 42%, transparent 72%);
+  filter: blur(24px);
+  opacity: .72;
+  pointer-events: none;
+  animation: graphAura 7s ease-in-out infinite alternate;
+}
+
+@keyframes graphAura {
+  from {
+    transform: translate3d(-18px, 0, 0) scale(.96);
+    opacity: .48;
+  }
+  to {
+    transform: translate3d(18px, 8px, 0) scale(1.05);
+    opacity: .78;
+  }
+}
+
+.graph-header {
+  margin-bottom: 15px;
+}
+
+.legend {
+  max-width: none;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 6px;
+  color: #9ca6ba;
+  background: rgba(255,255,255,.025);
+  border-color: rgba(255,255,255,.065);
+  font-size: 8.6px;
+  white-space: nowrap;
+}
+
+.legend .dot {
+  box-shadow: 0 0 9px rgba(148,163,255,.26);
+}
+
+.capability-dot {
+  box-shadow: 0 0 10px rgba(102,167,201,.34) !important;
+}
+
+.repair-dot {
+  box-shadow: 0 0 10px rgba(75,181,159,.36) !important;
+}
+
+.dot {
+  flex: 0 0 auto;
+}
+
+#cy {
+  height: 600px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(92,108,226,.11), transparent 32%),
+    radial-gradient(circle at 82% 30%, rgba(45,212,191,.045), transparent 28%),
+    linear-gradient(180deg, rgba(9,14,25,.94), rgba(12,18,31,.97));
+  border: 1px solid rgba(119,131,233,.12);
+  box-shadow:
+    inset 0 0 75px rgba(75,89,180,.055),
+    0 0 30px rgba(67,82,190,.055);
+}
+
+.graph-info {
+  min-height: 0;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 10px;
+  background: rgba(255,255,255,.022);
+  color: #9fa9bc;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.agent-panel {
+  border-color: rgba(121,134,236,.16);
+}
+
+.agent-input {
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.agent-input textarea {
+  min-height: 96px;
+  border-radius: 11px;
+  background: rgba(12,18,31,.72);
+  border-color: rgba(255,255,255,.09);
+}
+
+.agent-input textarea::placeholder {
+  color: #697489;
+}
+
+.simulation-panel {
+  background: linear-gradient(180deg, rgba(25,32,49,.76), rgba(20,27,41,.76));
+}
+
+.simulation-control {
+  margin-top: 15px;
+}
+
+.simulation-control select,
+.context-panel input,
+.agent-input textarea {
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.simulation-control select:focus,
+.context-panel input:focus,
+.agent-input textarea:focus {
+  border-color: rgba(129,140,248,.5);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.10);
+  background: rgba(15,22,37,.96);
+}
+
+button {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  letter-spacing: .01em;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:focus-visible {
+  outline: 3px solid rgba(129,140,248,.22);
+  outline-offset: 2px;
+}
+
+.primary {
+  background: linear-gradient(135deg, #6d63db, #5578dc);
+  box-shadow: 0 8px 20px rgba(80,93,205,.18);
+}
+
+.primary:hover {
+  box-shadow: 0 10px 24px rgba(80,93,205,.25);
+}
+
+.secondary {
+  color: #cbd2df;
+  background: rgba(255,255,255,.035);
+  border-color: rgba(255,255,255,.085);
+}
+
+.secondary:hover {
+  background: rgba(255,255,255,.055);
+  border-color: rgba(255,255,255,.12);
+}
+
+.context-panel {
+  margin-top: 16px;
+  padding: 19px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(15,22,37,.82), rgba(20,27,43,.74));
+  border-color: rgba(255,255,255,.07);
+}
+
+.context-header {
+  margin-bottom: 15px;
+}
+
+.context-title {
+  color: #f0f3f9;
+  font-size: 16px;
+}
+
+.context-description {
+  color: #818ca1;
+}
+
+.context-summary > div,
+.supplier-context-card,
+.capability-group {
+  background: rgba(255,255,255,.022);
+  border-color: rgba(255,255,255,.055);
+}
+
+.context-summary > div {
+  min-height: 72px;
+}
+
+.context-map-note {
+  margin-top: 14px;
+  background: rgba(85,103,190,.06);
+  border-color: rgba(117,131,225,.14);
+}
+
+.context-section-title {
+  margin-top: 22px;
+  color: #949eb1;
+  font-size: 10px;
+}
+
+.supplier-context-grid,
+.capability-groups {
+  margin-top: 10px;
+}
+
+.recovery-capability-card {
+  background: rgba(8,13,23,.34);
+}
+
+.capability-id {
+  color: #8994aa;
+}
+
+.context-footer {
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+
+.recovery-panel {
+  border-color: rgba(94,234,212,.12);
+}
+
+.impact-banner {
+  margin-bottom: 16px;
+  color: #e5bd89;
+  background: rgba(217,159,90,.07);
+  border-color: rgba(217,159,90,.18);
+}
+
+.options {
+  gap: 10px;
+}
+
+.option {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(35,44,65,.67);
+  border-color: rgba(255,255,255,.055);
+}
+
+.option.recommended {
+  border-left-width: 3px;
+  background: linear-gradient(120deg, rgba(39,91,76,.24), rgba(35,44,65,.70));
+}
+
+.option.rejected {
+  border-left-width: 3px;
+  opacity: .92;
+}
+
+.option-title {
+  font-size: 15px;
+}
+
+.option-meta {
+  font-size: 12px;
+}
+
+.badge {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+.reasoning-box {
+  padding: 15px;
+  border-color: rgba(255,255,255,.07);
+  background: rgba(255,255,255,.018);
+}
+
+.agent-summary-item,
+.reason-check {
+  background: rgba(255,255,255,.025);
+  border-color: rgba(255,255,255,.055);
+}
+
+@media (min-width: 900px) {
+  .agent-panel .agent-input {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .agent-panel .agent-input button {
+    width: fit-content;
+    min-width: 185px;
+  }
+}
+
+@media (max-width: 900px) {
+  .legend {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+/* ==========================================
+   MOBILE
+   ========================================== */
+
+@media(max-width:760px) {
+
+  .shell {
+    width: min(100% - 28px, 1220px);
+    padding-top: 22px;
+  }
+
+  .hero,
+  .graph-header,
+  .context-header {
+    flex-direction: column;
+  }
+
+  .legend {
+    justify-content:
+      flex-start;
+  }
+
+  .hero-trust {
+    gap: 6px;
+  }
+
+  .panel {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  #cy {
+    height: 450px;
+  }
+
+  .agent-summary-grid,
+  .context-summary,
+  .supplier-fields,
+  .capability-fields {
+    grid-template-columns:
+      1fr;
+  }
+
+  .reason-check,
+  .context-footer {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+  }
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="shell">
+
+
+  <!-- ========================================
+       HERO
+       ======================================== -->
+
+  <div class="hero">
+
+    <div class="brand">
+
+      <div class="eyebrow">
+        Operational recovery intelligence
+      </div>
+
+      <h1>
+        PromiseGraph
+      </h1>
+
+      <div class="subtitle">
+        When commitments break,
+        find the least-damaging recovery.
+      </div>
+
+      <div class="hero-trust">
+        <span>Multi-hop impact</span>
+        <span>Constraint-checked recovery</span>
+        <span>Persistent recovery memory</span>
+        <span>Explainable graph path</span>
+      </div>
+
+    </div>
+
+
+    <div class="live-badge">
+      <span class="status-dot"></span>
+      FalkorDB-backed
+    </div>
+
+  </div>
+
+
+  <!-- ========================================
+       CURRENT COMMITMENTS
+       ======================================== -->
+
+  <section class="panel commitments-panel">
+
+    <h2>
+      Current commitments
+    </h2>
+
+    <p class="muted">
+      Live commitment state and downstream risk across the current scenario.
+    </p>
+
+    <div
+      id="commitments"
+      class="commitments">
+    </div>
+
+  </section>
+
+
+  <!-- ========================================
+       GRAPH
+       ======================================== -->
+
+  <section class="panel graph-panel">
+
+    <div class="graph-header">
+
+      <div>
+
+        <h2>
+          Connected reasoning graph
+        </h2>
+
+        <p class="muted">
+          Explore the connected context behind each decision.
+          Select any node or relationship to inspect it.
+        </p>
+
+      </div>
+
+
+      <div class="legend">
+
+        <span>
+          <i class="dot commitment-dot"></i>
+          Commitment
+        </span>
+
+        <span>
+          <i class="dot vendor-dot"></i>
+          Vendor
+        </span>
+
+        <span>
+          <i class="dot type-dot"></i>
+          Type
+        </span>
+
+        <span>
+          <i class="dot capability-dot"></i>
+          Recovery capability
+        </span>
+
+        <span>
+          <i class="dot repair-dot"></i>
+          Recommended recovery
+        </span>
+
+        <span>
+          <i class="dot constraint-dot"></i>
+          Constraint
+        </span>
+
+        <span>
+          <i class="dot resource-dot"></i>
+          Resource
+        </span>
+
+        <span>
+          <i class="dot memory-dot"></i>
+          Incident memory
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <div id="cy"></div>
+
+
+    <div
+      id="graphInfo"
+      class="graph-info">
+
+      Select a node or edge
+      to inspect how the decision is connected.
+
+    </div>
+
+  </section>
+
+
+  <!-- ========================================
+       PROMISEGRAPH AGENT
+       ======================================== -->
+
+  <section class="panel agent-panel">
+
+    <h2>
+      PromiseGraph Agent
+    </h2>
+
+    <p class="muted">
+
+      Describe what changed in your business.
+
+      PromiseGraph resolves it to the graph,
+      traces downstream impact, retrieves prior recovery memory
+      and evaluates recovery routes against the current context.
+
+    </p>
+
+
+    <div class="agent-input">
+
+      <textarea
+        id="agentMessage"
+        placeholder="Example: Supplier A cannot deliver the 100 components by Friday"
+      ></textarea>
+
+
+      <button
+        class="primary"
+        onclick="runPromiseAgent()">
+
+        Analyze disruption
+
+      </button>
+
+    </div>
+
+
+    <div
+      id="agentResult"
+      class="graph-info">
+    </div>
+
+  </section>
+
+
+  <!-- ========================================
+       DISRUPTION SIMULATION
+       ======================================== -->
+
+  <section class="panel simulation-panel">
+
+    <h2>
+      Disruption simulation
+    </h2>
+
+
+    <p class="muted">
+
+      Use a direct commitment failure to test the same graph-backed
+      recovery engine without the natural-language agent.
+
+    </p>
+
+
+    <div class="simulation-control">
+
+      <label for="failureSelect">
+
+        Commitment to disrupt
+
+      </label>
+
+
+      <select
+        id="failureSelect">
+      </select>
+
+    </div>
+
+
+    <!-- =====================================
+         MAIN ACTION BUTTONS
+         ===================================== -->
+
+    <div class="actions">
+
+
+      <button
+        class="primary"
+        onclick="simulateFailure()">
+
+        Simulate disruption
+
+      </button>
+
+
+      <button
+        class="secondary"
+        onclick="resetScenario()">
+
+        Reset scenario
+
+      </button>
+
+
+      <button
+        class="secondary"
+        onclick="toggleCompanyContext()">
+
+        ⚙ Company context
+
+      </button>
+
+
+    </div>
+
+
+    <!-- =====================================
+         COMPANY CONTEXT PANEL
+         ===================================== -->
+
+    <div
+      id="companyContextPanel"
+      class="context-panel">
+
+
+      <div class="context-header">
+
+        <div>
+
+          <div class="context-title">
+
+            Company context
+
+          </div>
+
+
+          <div
+            class="muted context-description">
+
+            Operational facts stored in FalkorDB
+            and used by PromiseGraph during recovery.
+
+          </div>
+
+        </div>
+
+
+        <span class="context-live-badge">
+
+          Graph-backed
+
+        </span>
+
+      </div>
+
+
+      <!-- ===================================
+           CONTEXT SUMMARY
+           =================================== -->
+
+      <div class="context-summary">
+
+
+        <div>
+
+          <span class="context-label">
+            Resource
+          </span>
+
+          <strong
+            id="contextResourceName">
+
+            Loading...
+
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span class="context-label">
+
+            Required quantity
+
+          </span>
+
+          <strong
+            id="contextRequiredQuantity">
+
+            —
+
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <label
+            class="context-label"
+            for="contextBudget">
+
+            Recovery budget
+
+          </label>
+
+
+          <div class="money-input">
+
+            <span>
+              ₹
+            </span>
+
+            <input
+              id="contextBudget"
+              type="number"
+              min="0"
+              step="1">
+
+          </div>
+
+        </div>
+
+
+      </div>
+
+
+      <div class="context-map-note">
+
+        <strong>How context affects recovery</strong>
+
+        <span>
+          <b>C1</b> uses supplier capacity, cost and lead time.
+          <b>C2–C4</b> use the recovery capabilities below.
+          PromiseGraph reads these FalkorDB values again for every analysis.
+        </span>
+
+      </div>
+
+
+      <!-- ===================================
+           SUPPLIERS
+           =================================== -->
+
+      <div class="context-section-title">
+
+        Supply recovery · affects C1
+
+      </div>
+
+      <div class="muted context-description">
+
+        C1 — Deliver 100 components by Friday
+
+      </div>
+
+
+      <div
+        id="supplierContextRows"
+        class="supplier-context-grid">
+
+        Loading supplier data...
+
+      </div>
+
+
+      <!-- ===================================
+           RECOVERY CAPABILITIES
+           =================================== -->
+
+      <div class="context-section-title">
+
+        Recovery capabilities
+
+      </div>
+
+
+      <div class="muted context-description">
+
+        Each group below is linked to the commitment it can recover.
+        Change cost or delay to see that commitment's recommendation adapt.
+
+      </div>
+
+
+      <div
+        id="recoveryCapabilityRows"
+        class="capability-groups">
+
+        Loading recovery capabilities...
+
+      </div>
+
+
+      <div class="context-note">
+
+        Reset scenario clears the current incident only.
+        Company context stays saved until you change it
+        or restore the demo defaults.
+
+      </div>
+
+
+      <!-- ===================================
+           CONTEXT ACTIONS
+           =================================== -->
+
+      <div class="context-footer">
+
+
+        <div
+          id="contextSaveStatus"
+          class="muted context-status">
+        </div>
+
+
+        <div class="context-footer-actions">
+
+
+          <button
+            type="button"
+            class="secondary"
+            onclick="restoreDemoContext()">
+
+            Restore demo defaults
+
+          </button>
+
+
+          <button
+            type="button"
+            class="primary"
+            onclick="saveCompanyContext()">
+
+            Update graph context
+
+          </button>
+
+
+        </div>
+
+
+      </div>
+
+
+    </div>
+
+
+  </section>
+
+
+  <!-- ========================================
+       RECOVERY ANALYSIS
+       ======================================== -->
+
+  <section
+    id="recoverySection"
+    class="panel recovery recovery-panel">
+
+
+    <h2>
+      Recovery analysis
+    </h2>
+
+
+    <div
+      id="impact"
+      class="impact-banner">
+    </div>
+
+
+    <h3>
+      Recovery options
+    </h3>
+
+
+    <div
+      id="options"
+      class="options">
+    </div>
+
+
+  </section>
+
+
+</div>
+
+
+<script>
+
+
+const API =
+  "http://127.0.0.1:8000";
+
+
+let cy = null;
+
+
+let affectedIds =
+  new Set();
+
+
+function byId(id) {
+
+  return document.getElementById(
+    id
+  );
+
+}
+
+
+function money(number) {
+
+  return Number(
+    number
+  ).toLocaleString();
+
+}
+
+
+function shorten(
+  text,
+  limit = 27
+) {
+
+  if (!text)
+    return "";
+
+
+  if (
+    text.length <= limit
+  )
+    return text;
+
+
+  return (
+    text.slice(
+      0,
+      limit - 1
+    )
+    +
+    "…"
+  );
+
+}
+
+
+/* ==========================================
+   LOAD COMMITMENTS
+   ========================================== */
+
+async function loadCommitments() {
+
+  const response =
+    await fetch(
+      `${API}/commitments`
+    );
+
+
+  const commitments =
+    await response.json();
+
+
+  const select =
+    byId(
+      "failureSelect"
+    );
+
+
+  const previousSelection =
+    select.value;
+
+
+  select.innerHTML =
+    "";
+
+
+  commitments.forEach(
+    commitment => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        commitment.id;
+
+
+      option.textContent =
+        `${commitment.id} — ${commitment.name}`;
+
+
+      select.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  if (
+    previousSelection
+    &&
+    commitments.some(
+      commitment =>
+        commitment.id ===
+        previousSelection
+    )
+  ) {
+
+    select.value =
+      previousSelection;
+
+  }
+
+
+  const container =
+    byId(
+      "commitments"
+    );
+
+
+  container.innerHTML =
+    "";
+
+
+  commitments.forEach(
+    commitment => {
+
+
+      const card =
+        document.createElement(
+          "div"
+        );
+
+
+      const atRisk =
+        affectedIds.has(
+          commitment.id
+        );
+
+
+      const failed =
+        commitment.status ===
+        "failed";
+
+
+      card.className =
+
+        `commitment ${
+          failed
+            ? "failed"
+            :
+          atRisk
+            ? "at-risk"
+            :
+          ""
+        }`;
+
+
+      const shownStatus =
+
+        failed
+          ? commitment.status
+          :
+        atRisk
+          ? "at risk"
+          :
+        commitment.status;
+
+
+      const statusClass =
+
+        failed
+          ? "status-failed"
+          :
+        atRisk
+          ? "status-risk"
+          :
+        "";
+
+
+      card.innerHTML = `
+
+        <strong>
+          ${commitment.name}
+        </strong>
+
+        <br><br>
+
+        Status:
+
+        <span class="${statusClass}">
+          ${shownStatus}
+        </span>
+
+        <br>
+
+        Priority:
+
+        <span
+          class="priority-${commitment.priority}">
+
+          ${commitment.priority}
+
+        </span>
+
+      `;
+
+
+      container.appendChild(
+        card
+      );
+
+    }
+  );
+
+}
+
+
+/* ==========================================
+   LOAD GRAPH
+   ========================================== */
+
+async function loadGraph(
+  impact = null,
+  recovery = null
+) {
+
+  const response =
+    await fetch(
+      `${API}/graph`
+    );
+
+
+  const data =
+    await response.json();
+
+
+  const elements =
+    [];
+
+
+  data.nodes.forEach(
+    node => {
+
+      elements.push({
+
+        data: {
+
+          id:
+            node.id,
+
+          fullName:
+            node.name,
+
+          label:
+            node.type === "IncidentMemory"
+              ?
+            `MEMORY\n${shorten(node.id, 20)}`
+              :
+            `${node.id}\n${shorten(
+              node.name
+            )}`,
+
+          type:
+            node.type,
+
+          status:
+            node.status,
+
+          priority:
+            node.priority,
+
+          cost:
+            node.cost,
+
+          delay:
+            node.delay_hours
+
+        }
+
+      });
+
+    }
+  );
+
+
+  data.edges.forEach(
+    edge => {
+
+      elements.push({
+
+        data: {
+
+          id:
+            edge.id,
+
+          source:
+            edge.source,
+
+          target:
+            edge.target,
+
+          type:
+            edge.type,
+
+          reason:
+            edge.reason,
+
+          label:
+            edge.type
+              .replaceAll(
+                "_",
+                " "
+              )
+
+        }
+
+      });
+
+    }
+  );
+
+
+  /* ========================================
+     GENERATED RECOVERY OPTIONS
+     ======================================== */
+
+  if (
+    recovery
+    &&
+    recovery.options
+    &&
+    recovery.options.length
+  ) {
+
+    const graphRecoveryOptions =
+      recovery.recommended_recovery
+        ? recovery.options.filter(
+            option =>
+              option.id ===
+              recovery.recommended_recovery.id
+          )
+        : [];
+
+    graphRecoveryOptions.forEach(
+      option => {
+
+
+        elements.push({
+
+          data: {
+
+            id:
+              option.id,
+
+            fullName:
+              option.name,
+
+            label:
+              shorten(
+                option.name,
+                30
+              ),
+
+            type:
+              "RepairOption",
+
+            generated:
+              true,
+
+            cost:
+              option.cost,
+
+            capacity:
+              option.capacity,
+
+            delay:
+              option.delay_hours
+
+          }
+
+        });
+
+
+        elements.push({
+
+          data: {
+
+            id:
+              `GEN-REPAIR-${option.id}`,
+
+            source:
+              option.id,
+
+            target:
+              recovery.commitment_id,
+
+            type:
+              "REPAIRS",
+
+            label:
+              "RECOVERY ROUTE"
+
+          }
+
+        });
+
+
+        (
+          option.suppliers || []
+        )
+        .forEach(
+          supplier => {
+
+            elements.push({
+
+              data: {
+
+                id:
+                  `GEN-USE-${option.id}-${supplier.id}`,
+
+                source:
+                  option.id,
+
+                target:
+                  supplier.id,
+
+                type:
+                  "USES",
+
+                label:
+                  "USES"
+
+              }
+
+            });
+
+          }
+        );
+
+      }
+    );
+
+  }
+
+
+  cy = cytoscape({
+
+    container:
+      byId(
+        "cy"
+      ),
+
+    elements,
+
+    style: [
+
+      {
+
+        selector:
+          "node",
+
+        style: {
+
+          "label":
+            "data(label)",
+
+          "text-wrap":
+            "wrap",
+
+          "text-max-width":
+            "118px",
+
+          "font-size":
+            "11px",
+
+          "font-weight":
+            "600",
+
+          "text-valign":
+            "center",
+
+          "text-halign":
+            "center",
+
+          "color":
+            "#f7f8fc",
+
+          "background-color":
+            "#67758d",
+
+          "border-width":
+            2,
+
+          "border-color":
+            "#8895ac",
+
+          "width":
+            124,
+
+          "height":
+            66,
+
+          "shape":
+            "round-rectangle",
+
+          "overlay-opacity":
+            0,
+
+          "transition-property":
+            "background-color border-color border-width opacity underlay-opacity",
+
+          "transition-duration":
+            "260ms"
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'node[type="Commitment"]',
+
+        style: {
+
+          "background-color":
+            "#6476d3",
+
+          "border-color":
+            "#8998ed"
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'node[type="Vendor"]',
+
+        style: {
+
+          "background-color":
+            "#9c72c4",
+
+          "border-color":
+            "#bd9cdb",
+
+          "shape":
+            "ellipse",
+
+          "width":
+            94,
+
+          "height":
+            94
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'node[type="CommitmentType"]',
+
+        style: {
+
+          "background-color":
+            "#39465a",
+
+          "border-color":
+            "#56657a",
+
+          "color":
+            "#b7c0cf",
+
+          "width":
+            88,
+
+          "height":
+            44,
+
+          "font-size":
+            "9px",
+
+          "opacity":
+            .82,
+
+          "shape":
+            "round-rectangle"
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'node[type="RecoveryCapability"]',
+
+        style: {
+
+          "background-color":
+            "#436f86",
+
+          "border-color":
+            "#6d9eb5",
+
+          "shape":
+            "round-rectangle",
+
+          "width":
+            112,
+
+          "height":
+            54,
+
+          "font-size":
+            "9px",
+
+          "opacity":
+            .86
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'node[type="RepairOption"]',
+
+        style: {
+
+          "background-color":
+            "#3f9f8c",
+
+          "border-color":
+            "#70c7b6"
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'node[type="IncidentMemory"]',
+
+        style: {
+
+          "background-color":
+            "#685fbd",
+
+          "border-color":
+            "#9b92e4",
+
+          "shape":
+            "hexagon",
+
+          "width":
+            104,
+
+          "height":
+            70,
+
+          "font-size":
+            "9px",
+
+          "opacity":
+            .9
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'node[type="Constraint"]',
+
+        style: {
+
+          "background-color":
+            "#c76070",
+
+          "border-color":
+            "#e2909b",
+
+          "shape":
+            "diamond",
+
+          "width":
+            100,
+
+          "height":
+            100
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'node[type="Resource"]',
+
+        style: {
+
+          "background-color":
+            "#c89455",
+
+          "border-color":
+            "#e3bd83",
+
+          "shape":
+            "ellipse",
+
+          "width":
+            94,
+
+          "height":
+            94
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'node[status="failed"]',
+
+        style: {
+
+          "background-color":
+            "#c95361",
+
+          "border-color":
+            "#ef919a",
+
+          "border-width":
+            4
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          "edge",
+
+        style: {
+
+          "curve-style":
+            "bezier",
+
+          "width":
+            2,
+
+          "line-color":
+            "#58657b",
+
+          "target-arrow-color":
+            "#58657b",
+
+          "target-arrow-shape":
+            "triangle",
+
+          "label":
+            "",
+
+          "font-size":
+            "8px",
+
+          "color":
+            "#8e99ad",
+
+          "text-background-color":
+            "#171e2d",
+
+          "text-background-opacity":
+            .78,
+
+          "text-background-padding":
+            "3px",
+
+          "transition-property":
+            "line-color target-arrow-color width opacity underlay-opacity",
+
+          "transition-duration":
+            "260ms"
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'edge[type="DEPENDS_ON"]',
+
+        style: {
+
+          "line-color":
+            "#7485da",
+
+          "target-arrow-color":
+            "#7485da",
+
+          "label":
+            "DEPENDS ON",
+
+          "font-size":
+            "7px"
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'edge[type="REPAIRS"]',
+
+        style: {
+
+          "line-color":
+            "#4da894",
+
+          "target-arrow-color":
+            "#4da894",
+
+          "label":
+            "RECOVERY ROUTE",
+
+          "font-size":
+            "7px"
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'edge[type="AFFECTED"], edge[type="USED_CAPABILITY"], edge[type="USED_VENDOR"]',
+
+        style: {
+
+          "line-color":
+            "#756bc4",
+
+          "target-arrow-color":
+            "#756bc4",
+
+          "line-style":
+            "dashed",
+
+          "width":
+            1.6,
+
+          "opacity":
+            .6
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'edge[type="OF_KIND"]',
+
+        style: {
+
+          "line-color":
+            "#48566c",
+
+          "target-arrow-color":
+            "#48566c",
+
+          "line-style":
+            "dashed",
+
+          "width":
+            1,
+
+          "opacity":
+            .52
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          'edge[type="APPLIES_TO"]',
+
+        style: {
+
+          "line-color":
+            "#52677a",
+
+          "target-arrow-color":
+            "#52677a",
+
+          "line-style":
+            "dashed",
+
+          "width":
+            1,
+
+          "opacity":
+            .48
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          ".affected",
+
+        style: {
+
+          "background-color":
+            "#d49a57",
+
+          "border-color":
+            "#edc286",
+
+          "border-width":
+            4,
+
+          "underlay-color":
+            "#e0a15c",
+
+          "underlay-opacity":
+            .13,
+
+          "underlay-padding":
+            10
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          ".cascade",
+
+        style: {
+
+          "line-color":
+            "#e0a15c",
+
+          "target-arrow-color":
+            "#e0a15c",
+
+          "width":
+            4,
+
+          "underlay-color":
+            "#e0a15c",
+
+          "underlay-opacity":
+            .15,
+
+          "underlay-padding":
+            5
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          ".recommended-node",
+
+        style: {
+
+          "background-color":
+            "#42a77e",
+
+          "border-color":
+            "#90dfbd",
+
+          "border-width":
+            5,
+
+          "underlay-color":
+            "#58c497",
+
+          "underlay-opacity":
+            .20,
+
+          "underlay-padding":
+            13
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          ".rejected-node",
+
+        style: {
+
+          "background-color":
+            "#a94f5d",
+
+          "border-color":
+            "#df7b87",
+
+          "opacity":
+            .72
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          ".recommended-edge",
+
+        style: {
+
+          "line-color":
+            "#58c497",
+
+          "target-arrow-color":
+            "#58c497",
+
+          "width":
+            4,
+
+          "underlay-color":
+            "#58c497",
+
+          "underlay-opacity":
+            .18,
+
+          "underlay-padding":
+            6
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          "node:selected",
+
+        style: {
+
+          "border-color":
+            "#c5ccff",
+
+          "border-width":
+            4,
+
+          "underlay-color":
+            "#8391ff",
+
+          "underlay-opacity":
+            .16,
+
+          "underlay-padding":
+            9
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          "edge:selected",
+
+        style: {
+
+          "line-color":
+            "#9da8ff",
+
+          "target-arrow-color":
+            "#9da8ff",
+
+          "width":
+            4,
+
+          "underlay-color":
+            "#7f8cff",
+
+          "underlay-opacity":
+            .12,
+
+          "underlay-padding":
+            5
+
+        }
+
+      },
+
+
+      {
+
+        selector:
+          ".rejected-edge",
+
+        style: {
+
+          "line-color":
+            "#b85664",
+
+          "target-arrow-color":
+            "#b85664",
+
+          "opacity":
+            .62
+
+        }
+
+      }
+
+    ],
+
+
+    layout: {
+
+      name:
+        "cose",
+
+      animate:
+        true,
+
+      // Presentation-tuned COSE settings:
+      // keep the graph readable on first load without removing
+      // drag, zoom, pan or the natural connected layout.
+      padding:
+        18,
+
+      idealEdgeLength:
+        112,
+
+      nodeRepulsion:
+        180000,
+
+      gravity:
+        .85
+
+    }
+
+  });
+
+
+  // --------------------------------------------------
+  // Presentation-only wide graph framing
+  // --------------------------------------------------
+  // COSE naturally produced a tall, narrow cluster in this demo.
+  // After it finishes, spread the same node positions left/right
+  // and compress them slightly vertically so the graph uses the
+  // wide dashboard canvas. No graph data or relationships change.
+  cy.one(
+    "layoutstop",
+    () => {
+
+      if (
+        window.innerWidth > 760
+        &&
+        cy.nodes().length
+      ) {
+
+        const nodes =
+          cy.nodes();
+
+        let centerX = 0;
+        let centerY = 0;
+
+        nodes.forEach(
+          node => {
+            const position =
+              node.position();
+
+            centerX +=
+              position.x;
+
+            centerY +=
+              position.y;
+          }
+        );
+
+        centerX /=
+          nodes.length;
+
+        centerY /=
+          nodes.length;
+
+        nodes.forEach(
+          node => {
+            const position =
+              node.position();
+
+            node.position({
+              x:
+                centerX
+                +
+                (position.x - centerX)
+                *
+                1.75,
+
+              y:
+                centerY
+                +
+                (position.y - centerY)
+                *
+                .65
+            });
+          }
+        );
+
+        cy.fit(
+          cy.elements(),
+          48
+        );
+      }
+
+    }
+  );
+
+
+  /* ========================================
+     GRAPH NODE CLICK
+     ======================================== */
+
+  cy.on(
+    "tap",
+    "node",
+    event => {
+
+      const node =
+        event.target.data();
+
+
+      let text =
+
+        `<strong>
+          ${node.fullName}
+        </strong>
+        ·
+        ${node.type}`;
+
+
+      if (
+        node.status
+      ) {
+
+        text +=
+          ` · Status: ${node.status}`;
+
+      }
+
+
+      if (
+        node.priority
+      ) {
+
+        text +=
+          ` · Priority: ${node.priority}`;
+
+      }
+
+
+      if (
+        node.cost !== null
+        &&
+        node.cost !== undefined
+      ) {
+
+        text +=
+          ` · Cost: ₹${node.cost}`;
+
+      }
+
+
+      byId(
+        "graphInfo"
+      ).innerHTML =
+        text;
+
+    }
+  );
+
+
+  /* ========================================
+     GRAPH EDGE CLICK
+     ======================================== */
+
+  cy.on(
+    "tap",
+    "edge",
+    event => {
+
+      const edge =
+        event.target.data();
+
+
+      byId(
+        "graphInfo"
+      ).innerHTML =
+
+        `<strong>
+
+          ${edge.type
+            .replaceAll(
+              "_",
+              " "
+            )}
+
+        </strong>
+
+        ${
+          edge.reason
+            ? ` · ${edge.reason}`
+            : ""
+        }`;
+
+    }
+  );
+
+
+  if (
+    impact
+    &&
+    recovery
+  ) {
+
+    highlightScenario(
+      impact,
+      recovery
+    );
+
+  }
+
+}
+
+
+/* ==========================================
+   HIGHLIGHT SCENARIO
+   ========================================== */
+
+function highlightScenario(
+  impact,
+  recovery
+) {
+
+  const ids =
+    new Set([
+
+      impact.failed_commitment,
+
+      ...(
+        impact
+          .affected_commitments
+        ||
+        []
+      )
+      .map(
+        commitment =>
+          commitment.id
+      )
+
+    ]);
+
+
+  (
+    impact
+      .affected_commitments
+    ||
+    []
+  )
+  .forEach(
+    commitment => {
+
+      cy
+        .getElementById(
+          commitment.id
+        )
+        .addClass(
+          "affected"
+        );
+
+    }
+  );
+
+
+  cy.edges()
+    .forEach(
+      edge => {
+
+        if (
+          edge.data(
+            "type"
+          ) ===
+          "DEPENDS_ON"
+
+          &&
+
+          ids.has(
+            edge
+              .source()
+              .id()
+          )
+
+          &&
+
+          ids.has(
+            edge
+              .target()
+              .id()
+          )
+        ) {
+
+          edge.addClass(
+            "cascade"
+          );
+
+        }
+
+      }
+    );
+
+
+  (
+    recovery.options
+    ||
+    []
+  )
+  .forEach(
+    option => {
+
+
+      const node =
+        cy.getElementById(
+          option.id
+        );
+
+
+      const recommended =
+
+        recovery
+          .recommended_recovery
+        &&
+        recovery
+          .recommended_recovery
+          .id ===
+          option.id;
+
+
+      const rejected =
+
+        (
+          option
+            .hard_problems
+          ||
+          []
+        )
+        .length > 0;
+
+
+      if (
+        recommended
+      ) {
+
+        node.addClass(
+          "recommended-node"
+        );
+
+      }
+
+      else if (
+        rejected
+      ) {
+
+        node.addClass(
+          "rejected-node"
+        );
+
+      }
+
+
+      cy.edges()
+        .forEach(
+          edge => {
+
+            if (
+              edge
+                .source()
+                .id()
+              ===
+              option.id
+            ) {
+
+              if (
+                recommended
+              ) {
+
+                edge.addClass(
+                  "recommended-edge"
+                );
+
+              }
+
+              else if (
+                rejected
+              ) {
+
+                edge.addClass(
+                  "rejected-edge"
+                );
+
+              }
+
+            }
+
+          }
+        );
+
+    }
+  );
+
+}
+
+
+/* ==========================================
+   MANUAL SIMULATION
+   ========================================== */
+
+async function simulateFailure() {
+
+  const commitmentId =
+    byId(
+      "failureSelect"
+    ).value;
+
+
+  if (
+    !commitmentId
+  )
+    return;
+
+
+  await fetch(
+    `${API}/reset`,
+    {
+      method:
+        "POST"
+    }
+  );
+
+
+  const failResponse =
+    await fetch(
+
+      `${API}/fail/${commitmentId}`,
+
+      {
+        method:
+          "POST"
+      }
+
+    );
+
+
+  const impact =
+    await failResponse.json();
+
+
+  affectedIds =
+    new Set(
+
+      (
+        impact
+          .affected_commitments
+        ||
+        []
+      )
+      .map(
+        commitment =>
+          commitment.id
+      )
+
+    );
+
+
+  const recoveryResponse =
+    await fetch(
+      `${API}/recovery/${commitmentId}`
+    );
+
+
+  const recovery =
+    await recoveryResponse.json();
+
+
+  await loadCommitments();
+
+
+  byId(
+    "failureSelect"
+  ).value =
+    commitmentId;
+
+
+  await loadGraph(
+    impact,
+    recovery
+  );
+
+
+  byId(
+    "recoverySection"
+  ).style.display =
+    "block";
+
+
+  byId(
+    "impact"
+  ).innerHTML = `
+
+    <strong>
+
+      ${impact.affected_count}
+
+      downstream commitment${
+        impact.affected_count === 1
+          ? ""
+          : "s"
+      }
+
+    </strong>
+
+    ${
+      impact.affected_count === 1
+        ? "is"
+        : "are"
+    }
+
+    now at risk because
+
+    <strong>
+      ${commitmentId}
+    </strong>
+
+    failed upstream in the graph.
+
+  `;
+
+
+  const container =
+    byId(
+      "options"
+    );
+
+
+  container.innerHTML =
+    "";
+
+
+  if (
+    !recovery.options
+    ||
+    recovery.options.length === 0
+  ) {
+
+    container.innerHTML = `
+
+      <div class="option">
+
+        <div class="option-title">
+
+          Impact path discovered
+
+        </div>
+
+        <p class="muted">
+
+          PromiseGraph traced
+          the downstream consequences,
+          but no recovery alternatives
+          are currently available.
+
+        </p>
+
+      </div>
+
+    `;
+
+  }
+
+  else {
+
+    recovery.options.forEach(
+      option => {
+
+
+        const recommended =
+
+          recovery
+            .recommended_recovery
+          &&
+          recovery
+            .recommended_recovery
+            .id ===
+            option.id;
+
+
+        const rejected =
+
+          (
+            option
+              .hard_problems
+            ||
+            []
+          )
+          .length > 0;
+
+
+        const card =
+          document.createElement(
+            "div"
+          );
+
+
+        card.className =
+
+          `option ${
+            recommended
+              ? "recommended"
+              :
+            rejected
+              ? "rejected"
+              :
+            ""
+          }`;
+
+
+        let html = `
+
+          <div class="option-title">
+
+            ${option.name}
+
+          </div>
+
+          <div class="option-meta">
+
+            Cost:
+            ₹${money(
+              option.cost
+            )}
+
+            ·
+
+            Delay:
+            ${option.delay_hours}
+            hours
+
+          </div>
+
+        `;
+
+
+        if (
+          rejected
+        ) {
+
+          html += `
+
+            <span class="badge bad">
+
+              Rejected
+
+            </span>
+
+          `;
+
+
+          option
+            .hard_problems
+            .forEach(
+              problem => {
+
+                html += `
+
+                  <p class="reason-bad">
+
+                    ${problem.reason}
+
+                  </p>
+
+                `;
+
+              }
+            );
+
+        }
+
+
+        if (
+          recommended
+        ) {
+
+          html += `
+
+            <span class="badge good">
+
+              Recommended recovery
+
+            </span>
+
+          `;
+
+
+          (
+            option
+              .soft_impacts
+            ||
+            []
+          )
+          .forEach(
+            impactItem => {
+
+              html += `
+
+                <p class="reason-good">
+
+                  Known consequence:
+                  ${impactItem.reason}
+
+                </p>
+
+              `;
+
+            }
+          );
+
+        }
+
+
+        card.innerHTML =
+          html;
+
+
+        container.appendChild(
+          card
+        );
+
+      }
+    );
+
+  }
+
+
+  byId(
+    "recoverySection"
+  )
+  .scrollIntoView({
+
+    behavior:
+      "smooth",
+
+    block:
+      "start"
+
+  });
+
+}
+
+
+/* ==========================================
+   RESET SCENARIO
+   ========================================== */
+
+async function resetScenario() {
+
+  await fetch(
+    `${API}/reset`,
+    {
+      method:
+        "POST"
+    }
+  );
+
+
+  affectedIds =
+    new Set();
+
+
+  window.lastAgentCommitmentId =
+    null;
+
+
+  byId(
+    "recoverySection"
+  ).style.display =
+    "none";
+
+
+  byId(
+    "graphInfo"
+  ).textContent =
+
+    "Select a node or edge " +
+    "to inspect how the decision is connected.";
+
+
+  byId(
+    "agentResult"
+  ).innerHTML =
+    "";
+
+
+  await loadCommitments();
+
+  await loadGraph();
+
+
+  if (
+    byId(
+      "companyContextPanel"
+    )
+    .classList
+    .contains(
+      "open"
+    )
+  ) {
+
+    await loadCompanyContext();
+
+  }
+
+}
+
+
+/* ==========================================
+   PROMISEGRAPH AGENT
+   ========================================== */
+
+async function runPromiseAgent() {
+
+  const message =
+    byId(
+      "agentMessage"
+    )
+    .value
+    .trim();
+
+
+  const resultBox =
+    byId(
+      "agentResult"
+    );
+
+
+  if (
+    !message
+  ) {
+
+    resultBox.textContent =
+      "Please describe a disruption first.";
+
+    return;
+
+  }
+
+
+  resultBox.textContent =
+
+    "Analyzing connected commitments, " +
+    "graph memory and recovery routes...";
+
+
+  try {
+
+
+    await fetch(
+      `${API}/reset`,
+      {
+        method:
+          "POST"
+      }
+    );
+
+
+    affectedIds =
+      new Set();
+
+
+    const response =
+      await fetch(
+        `${API}/agent`,
+        {
+
+          method:
+            "POST",
+
+          headers: {
+
+            "Content-Type":
+              "application/json"
+
+          },
+
+          body:
+            JSON.stringify({
+
+              message:
+                message
+
+            })
+
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    /* ======================================
+       UNKNOWN INPUT
+       ====================================== */
+
+    if (
+      result.status ===
+      "needs_clarification"
+
+      ||
+
+      result.status ===
+      "no_connected_commitment"
+    ) {
+
+      resultBox.innerHTML = `
+
+        <div class="agent-warning">
+
+          <strong>
+
+            ${
+              result.status ===
+              "needs_clarification"
+
+                ?
+
+              "Could not confidently identify a graph entity."
+
+                :
+
+              "No connected commitment found."
+            }
+
+          </strong>
+
+          <div
+            class="muted"
+            style="margin-top:8px">
+
+            ${result.message}
+
+          </div>
+
+        </div>
+
+      `;
+
+
+      await loadCommitments();
+
+      await loadGraph();
+
+      return;
+
+    }
+
+
+    if (
+      !response.ok
+    ) {
+
+      resultBox.textContent =
+
+        result.error
+        ||
+        "Agent request failed.";
+
+      return;
+
+    }
+
+
+    const commitment =
+      result.matched_commitment;
+
+
+    const recovery =
+      result.recommended_recovery;
+
+
+    window.lastAgentCommitmentId =
+      commitment.id;
+
+
+    affectedIds =
+      new Set(
+
+        (
+          result
+            .affected_commitments
+          ||
+          []
+        )
+        .map(
+          commitment =>
+            commitment.id
+        )
+
+      );
+
+
+    /* ======================================
+       GRAPH EVIDENCE
+       ====================================== */
+
+    const evidencePath =
+      result.evidence_path || [];
+
+
+    const evidenceHtml =
+
+      evidencePath.length
+
+        ?
+
+      evidencePath
+        .map(
+          step => `
+
+            <div class="evidence-step">
+
+              <span class="evidence-node">
+
+                ${step.from}
+
+              </span>
+
+              <span class="evidence-arrow">
+
+                →
+
+                <small>
+                  ${step.relationship}
+                </small>
+
+                →
+
+              </span>
+
+              <span class="evidence-node">
+
+                ${step.to}
+
+              </span>
+
+            </div>
+
+          `
+        )
+        .join("")
+
+        :
+
+      `
+
+        <div class="muted">
+
+          No graph evidence path available.
+
+        </div>
+
+      `;
+
+
+    /* ======================================
+       FEASIBILITY CHECKS
+       ====================================== */
+
+    let checksHtml =
+      "";
+
+
+    if (
+      recovery
+      &&
+      recovery.checks
+    ) {
+
+      checksHtml =
+        recovery
+          .checks
+          .map(
+            check => {
+
+
+              if (
+                check.check ===
+                "supplier_capacity"
+              ) {
+
+                return `
+
+                  <div class="reason-check">
+
+                    <strong>
+
+                      ${
+                        check.passed
+                          ? "✓"
+                          : "✕"
+                      }
+
+                      Capacity
+
+                    </strong>
+
+                    <span>
+
+                      ${check.available_capacity}
+                      available
+
+                      /
+
+                      ${check.required_quantity}
+                      required
+
+                    </span>
+
+                  </div>
+
+                `;
+
+              }
+
+
+              if (
+                check.check ===
+                "budget"
+              ) {
+
+                return `
+
+                  <div class="reason-check">
+
+                    <strong>
+
+                      ${
+                        check.passed
+                          ? "✓"
+                          : "✕"
+                      }
+
+                      Budget
+
+                    </strong>
+
+                    <span>
+
+                      ₹${money(
+                        check.repair_cost
+                      )}
+
+                      /
+
+                      ₹${money(
+                        check.budget_limit
+                      )}
+
+                    </span>
+
+                  </div>
+
+                `;
+
+              }
+
+
+              if (
+                check.check ===
+                "delay_propagation"
+              ) {
+
+                const rows =
+
+                  (
+                    check.results
+                    ||
+                    []
+                  )
+                  .map(
+                    item => `
+
+                      <div class="timing-row">
+
+                        <span>
+
+                          ${item.commitment}
+
+                        </span>
+
+                        <strong
+                          class="timing-${item.status.toLowerCase()}">
+
+                          ${
+                            item.status ===
+                            "SAFE"
+
+                              ?
+
+                            "✓"
+
+                              :
+
+                            item.status ===
+                            "IMPACTS"
+
+                              ?
+
+                            "!"
+
+                              :
+
+                            "✕"
+                          }
+
+                          ${item.status}
+
+                        </strong>
+
+                      </div>
+
+                    `
+                  )
+                  .join("");
+
+
+                return `
+
+                  <div
+                    class="reason-check timing-check">
+
+                    <strong>
+                      Timing propagation
+                    </strong>
+
+                    <div
+                      style="margin-top:8px">
+
+                      ${rows}
+
+                    </div>
+
+                  </div>
+
+                `;
+
+              }
+
+
+              return "";
+
+            }
+          )
+          .join("");
+
+    }
+
+
+    if (
+      recovery
+      &&
+      !checksHtml
+    ) {
+
+      checksHtml = `
+
+        <div class="muted">
+
+          This recovery passed the graph
+          constraints used by the
+          recovery engine.
+
+        </div>
+
+      `;
+
+    }
+
+
+    /* ======================================
+       AI TOOL ROUTE
+       ====================================== */
+
+    const agentMode =
+      result.agent_mode
+      ||
+      "deterministic_fallback";
+
+
+    const isGeminiRouter =
+      agentMode ===
+      "gemini_tool_router";
+
+
+    const toolNames =
+      (
+        result.tool_trace
+        ||
+        []
+      )
+      .map(
+        item =>
+          item.tool
+      )
+      .filter(
+        Boolean
+      );
+
+
+    const toolRouteHtml =
+
+      toolNames.length
+
+        ?
+
+      toolNames
+        .map(
+          (toolName, index) => `
+
+            ${
+              index > 0
+                ?
+              `<span class="agent-route-arrow">→</span>`
+                :
+              ""
+            }
+
+            <span class="agent-route-step">
+              ${toolName}
+            </span>
+
+          `
+        )
+        .join("")
+
+        :
+
+      `
+
+        <span class="muted">
+          No tool trace available.
+        </span>
+
+      `;
+
+
+    const agentRouteHtml = `
+
+      <div class="agent-route">
+
+        <div class="agent-route-head">
+
+          <div>
+
+            <div class="reasoning-subtitle">
+              Agent tool route
+            </div>
+
+            <strong>
+
+              ${
+                isGeminiRouter
+                  ?
+                "Gemini selected the graph tools"
+                  :
+                "Deterministic graph-agent fallback"
+              }
+
+            </strong>
+
+          </div>
+
+
+          <div class="agent-route-badges">
+
+            <span class="agent-route-badge ai">
+
+              ${
+                isGeminiRouter
+                  ?
+                "AI Router · Gemini"
+                  :
+                "Fallback mode"
+              }
+
+            </span>
+
+            <span class="agent-route-badge graph">
+              Grounded · FalkorDB
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="agent-route-caption">
+
+          ${
+            isGeminiRouter
+
+              ?
+
+            "Gemini dynamically selected each next graph tool from the disruption and prior tool results. Operational facts and recovery constraints came from FalkorDB."
+
+              :
+
+            "The Gemini router was unavailable, so PromiseGraph used its graph-grounded deterministic workflow. FalkorDB remains the source of operational context."
+
+          }
+
+        </div>
+
+
+        <div class="agent-route-steps">
+
+          ${toolRouteHtml}
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    /* ======================================
+       ORGANIZATIONAL MEMORY
+       ====================================== */
+
+    const priorIncidents =
+      result.prior_incidents
+      ||
+      [];
+
+
+    const memoryChecked =
+      result.memory_checked === true;
+
+
+    let organizationalMemoryHtml =
+      "";
+
+
+    if (
+      memoryChecked
+    ) {
+
+      const memoryCount =
+        priorIncidents.length;
+
+
+      if (
+        memoryCount > 0
+      ) {
+
+        const latestMemory =
+          priorIncidents[0];
+
+
+        const memoryCost =
+          latestMemory.recovery_cost
+          !== null
+          &&
+          latestMemory.recovery_cost
+          !== undefined
+
+            ?
+
+          `₹${money(latestMemory.recovery_cost)}`
+
+            :
+
+          "Cost unavailable";
+
+
+        const memoryDelay =
+          latestMemory.recovery_delay_hours
+          !== null
+          &&
+          latestMemory.recovery_delay_hours
+          !== undefined
+
+            ?
+
+          `${latestMemory.recovery_delay_hours}h delay`
+
+            :
+
+          "Delay unavailable";
+
+
+        const memoryOutcome =
+          latestMemory.outcome
+
+            ?
+
+          latestMemory.outcome
+            .charAt(0)
+            .toUpperCase()
+          +
+          latestMemory.outcome
+            .slice(1)
+
+            :
+
+          "Recorded";
+
+
+        organizationalMemoryHtml = `
+
+          <div class="agent-memory">
+
+            <div class="agent-memory-head">
+
+              <div class="agent-memory-title">
+
+                <div class="reasoning-subtitle">
+                  Organizational memory
+                </div>
+
+                <strong>
+                  ${memoryCount}
+                  prior incident${memoryCount === 1 ? "" : "s"}
+                  retrieved
+                </strong>
+
+              </div>
+
+
+              <div class="agent-memory-badges">
+
+                <span class="agent-memory-badge">
+                  Persistent memory
+                </span>
+
+                <span class="agent-memory-badge graph">
+                  FalkorDB
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="agent-memory-body">
+
+              <div class="agent-memory-record">
+
+                <div>
+
+                  <div class="summary-label">
+                    Latest remembered recovery
+                  </div>
+
+                  <div class="agent-memory-recovery">
+                    ${latestMemory.recovery_name || "Recovery decision"}
+                  </div>
+
+                  <div class="agent-memory-commitment">
+                    ${latestMemory.commitment_name || commitment.name}
+                  </div>
+
+                </div>
+
+
+                <div class="agent-memory-meta">
+
+                  <span>${memoryCost}</span>
+                  <span>${memoryDelay}</span>
+                  <span>${memoryOutcome}</span>
+
+                </div>
+
+              </div>
+
+
+              <div class="agent-memory-note">
+                Historical recovery was retrieved as graph context.
+                PromiseGraph still re-evaluated feasibility against
+                the current constraints before recommending an action.
+              </div>
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+
+      else {
+
+        organizationalMemoryHtml = `
+
+          <div class="agent-memory">
+
+            <div class="agent-memory-head">
+
+              <div class="agent-memory-title">
+
+                <div class="reasoning-subtitle">
+                  Organizational memory
+                </div>
+
+                <strong>
+                  First recorded encounter
+                </strong>
+
+              </div>
+
+
+              <div class="agent-memory-badges">
+
+                <span class="agent-memory-badge graph">
+                  FalkorDB checked
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="agent-memory-body">
+
+              <div class="agent-memory-empty">
+                No prior recovery was found for this commitment.
+                If the recommended action is applied, PromiseGraph
+                will preserve the decision as persistent incident
+                memory for future disruptions.
+              </div>
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+
+    }
+
+
+    resultBox.innerHTML = `
+
+
+      <div class="agent-summary-grid">
+
+
+        <div class="agent-summary-item">
+
+          <span class="summary-label">
+
+            Matched commitment
+
+          </span>
+
+          <strong>
+
+            ${commitment.name}
+
+          </strong>
+
+        </div>
+
+
+        <div class="agent-summary-item">
+
+          <span class="summary-label">
+
+            Downstream impact
+
+          </span>
+
+          <strong>
+
+            ${
+              (
+                result
+                  .affected_commitments
+                ||
+                []
+              )
+              .length
+            }
+
+            commitment(s)
+
+          </strong>
+
+        </div>
+
+
+        <div class="agent-summary-item">
+
+          <span class="summary-label">
+
+            Options evaluated
+
+          </span>
+
+          <strong>
+
+            ${
+              (
+                result
+                  .generated_options
+                ||
+                []
+              )
+              .length
+            }
+
+          </strong>
+
+        </div>
+
+
+      </div>
+
+
+      ${agentRouteHtml}
+
+
+      ${organizationalMemoryHtml}
+
+
+      <div class="agent-recommendation">
+
+        <div class="reasoning-subtitle">
+
+          Recommended recovery
+
+        </div>
+
+
+        ${
+          recovery
+
+            ?
+
+          `
+
+            <strong>
+
+              ${recovery.name}
+
+            </strong>
+
+            <br>
+
+            Cost:
+            ₹${money(
+              recovery.cost
+            )}
+
+            ·
+
+            Delay:
+            ${recovery.delay_hours}h
+
+          `
+
+            :
+
+          "No feasible recovery route found."
+        }
+
+
+      </div>
+
+
+      <div class="muted agent-explanation">
+
+        ${result.explanation}
+
+      </div>
+
+
+      <div class="reasoning-box">
+
+        <div class="reasoning-title">
+
+          Why this decision?
+
+        </div>
+
+
+        <div class="reasoning-subtitle">
+
+          Graph evidence path
+
+        </div>
+
+
+        <div class="evidence-path">
+
+          ${evidenceHtml}
+
+        </div>
+
+
+        ${
+          recovery
+
+            ?
+
+          `
+
+            <div
+              class="reasoning-subtitle"
+              style="margin-top:20px">
+
+              Feasibility checks
+
+            </div>
+
+
+            <div class="reason-checks">
+
+              ${checksHtml}
+
+            </div>
+
+          `
+
+            :
+
+          ""
+        }
+
+
+      </div>
+
+
+      ${
+        recovery
+
+          ?
+
+        `
+
+          <div class="agent-action-area">
+
+            <button
+              class="primary"
+              onclick="applyAgentRecovery()">
+
+              Apply recommended recovery
+
+            </button>
+
+
+            <div
+              id="applyStatus"
+              class="muted"
+              style="margin-top:10px">
+            </div>
+
+          </div>
+
+        `
+
+          :
+
+        ""
+      }
+
+
+    `;
+
+
+    byId(
+      "failureSelect"
+    ).value =
+      commitment.id;
+
+
+    const impact = {
+
+      failed_commitment:
+        commitment.id,
+
+      affected_count:
+        (
+          result
+            .affected_commitments
+          ||
+          []
+        )
+        .length,
+
+      affected_commitments:
+        result
+          .affected_commitments
+        ||
+        []
+
+    };
+
+
+    const recoveryData = {
+
+      commitment_id:
+        commitment.id,
+
+      options:
+        result
+          .generated_options
+        ||
+        [],
+
+      recommended_recovery:
+        result
+          .recommended_recovery
+
+    };
+
+
+    await loadCommitments();
+
+
+    await loadGraph(
+      impact,
+      recoveryData
+    );
+
+  }
+
+  catch (
+    error
+  ) {
+
+    console.error(
+      error
+    );
+
+
+    resultBox.innerHTML = `
+
+      <div class="agent-warning">
+
+        <strong>
+
+          Could not reach
+          the PromiseGraph agent.
+
+        </strong>
+
+        <div
+          class="muted"
+          style="margin-top:8px">
+
+          Check that the backend
+          is running on port 8000.
+
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* ==========================================
+   APPLY RECOVERY
+   ========================================== */
+
+async function applyAgentRecovery() {
+
+  const commitmentId =
+    window
+      .lastAgentCommitmentId;
+
+
+  const statusBox =
+    byId(
+      "applyStatus"
+    );
+
+
+  if (
+    !commitmentId
+  ) {
+
+    if (
+      statusBox
+    ) {
+
+      statusBox.textContent =
+        "No recovery is ready to apply.";
+
+    }
+
+    return;
+
+  }
+
+
+  if (
+    statusBox
+  ) {
+
+    statusBox.textContent =
+      "Applying recovery to the graph...";
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+
+        `${API}/apply/${commitmentId}`,
+
+        {
+          method:
+            "POST"
+        }
+
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (
+      !response.ok
+      ||
+      result.status !==
+      "applied"
+    ) {
+
+      if (
+        statusBox
+      ) {
+
+        statusBox.textContent =
+          "Recovery could not be applied.";
+
+      }
+
+      return;
+
+    }
+
+
+    if (
+      statusBox
+    ) {
+
+      statusBox.innerHTML = `
+
+        ✓ Recovery applied:
+
+        <strong>
+
+          ${result.recovery.name}
+
+        </strong>
+
+        <br>
+
+        Decision
+        ${result.decision_id}
+        has been written to FalkorDB.
+
+        ${
+          result.memory_recorded
+
+            ?
+
+          `
+            <br>
+            <span style="color:#91e2cf">
+              ✓ Incident memory persisted for future disruptions
+            </span>
+          `
+
+            :
+
+          ""
+        }
+
+      `;
+
+    }
+
+
+    await loadCommitments();
+
+    await loadGraph();
+
+  }
+
+  catch (
+    error
+  ) {
+
+    console.error(
+      error
+    );
+
+
+    if (
+      statusBox
+    ) {
+
+      statusBox.textContent =
+        "Could not apply recovery.";
+
+    }
+
+  }
+
+}
+
+
+/* ==========================================
+   OPEN / CLOSE COMPANY CONTEXT
+   ========================================== */
+
+async function toggleCompanyContext() {
+
+  const panel =
+    byId(
+      "companyContextPanel"
+    );
+
+
+  const opening =
+    !panel
+      .classList
+      .contains(
+        "open"
+      );
+
+
+  panel
+    .classList
+    .toggle(
+      "open"
+    );
+
+
+  if (
+    opening
+  ) {
+
+    await loadCompanyContext();
+
+  }
+
+}
+
+
+/* ==========================================
+   LOAD COMPANY CONTEXT
+   ========================================== */
+
+async function loadCompanyContext() {
+
+  const supplierContainer =
+    byId(
+      "supplierContextRows"
+    );
+
+
+  const capabilityContainer =
+    byId(
+      "recoveryCapabilityRows"
+    );
+
+
+  const statusBox =
+    byId(
+      "contextSaveStatus"
+    );
+
+
+  statusBox.textContent =
+    "";
+
+
+  supplierContainer.textContent =
+    "Loading supplier context...";
+
+
+  capabilityContainer.textContent =
+    "Loading recovery capabilities...";
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/context`
+      );
+
+
+    const context =
+      await response.json();
+
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+
+        context.error
+        ||
+        "Could not load company context."
+
+      );
+
+    }
+
+
+    byId(
+      "contextResourceName"
+    ).textContent =
+
+      context.resource
+        ?
+      context.resource.name
+        :
+      "—";
+
+
+    byId(
+      "contextRequiredQuantity"
+    ).textContent =
+
+      context.resource
+        ?
+      context.resource.required_quantity
+        :
+      "—";
+
+
+    byId(
+      "contextBudget"
+    ).value =
+
+      context.budget
+        ?
+      context.budget.limit
+        :
+      "";
+
+
+    /* --------------------------------------
+       SUPPLIERS
+       -------------------------------------- */
+
+    supplierContainer.innerHTML =
+      "";
+
+
+    (
+      context.suppliers
+      ||
+      []
+    )
+    .forEach(
+      supplier => {
+
+
+        const card =
+          document.createElement(
+            "div"
+          );
+
+
+        card.className =
+          "supplier-context-card";
+
+
+        card.dataset.vendorId =
+          supplier.id;
+
+
+        card.innerHTML = `
+
+
+          <div class="supplier-context-name">
+
+            <span>
+
+              ${supplier.name}
+
+            </span>
+
+            <span class="supplier-status">
+
+              ${supplier.status}
+
+            </span>
+
+          </div>
+
+
+          <div class="supplier-fields">
+
+
+            <div class="supplier-field">
+
+              <label>
+
+                Capacity
+
+              </label>
+
+              <input
+                class="context-capacity"
+                type="number"
+                min="0"
+                step="1"
+                value="${supplier.capacity}">
+
+            </div>
+
+
+            <div class="supplier-field">
+
+              <label>
+
+                Cost ₹
+
+              </label>
+
+              <input
+                class="context-cost"
+                type="number"
+                min="0"
+                step="1"
+                value="${supplier.emergency_cost}">
+
+            </div>
+
+
+            <div class="supplier-field">
+
+              <label>
+
+                Lead time h
+
+              </label>
+
+              <input
+                class="context-lead"
+                type="number"
+                min="0"
+                step="1"
+                value="${supplier.lead_time_hours}">
+
+            </div>
+
+
+          </div>
+
+
+        `;
+
+
+        supplierContainer.appendChild(
+          card
+        );
+
+      }
+    );
+
+
+    if (
+      !context.suppliers
+      ||
+      context.suppliers.length === 0
+    ) {
+
+      supplierContainer.innerHTML = `
+
+        <div class="muted">
+
+          No suppliers are connected
+          to this resource.
+
+        </div>
+
+      `;
+
+    }
+
+
+    /* --------------------------------------
+       RECOVERY CAPABILITIES
+       -------------------------------------- */
+
+    capabilityContainer.innerHTML =
+      "";
+
+
+    const capabilityGroups =
+      {};
+
+
+    (
+      context.recovery_capabilities
+      ||
+      []
+    )
+    .forEach(
+      capability => {
+
+        const typeName =
+          capability.type_name
+          ||
+          "other";
+
+
+        if (
+          !capabilityGroups[typeName]
+        ) {
+
+          capabilityGroups[typeName] =
+            [];
+
+        }
+
+
+        capabilityGroups[typeName]
+          .push(
+            capability
+          );
+
+      }
+    );
+
+
+    const typeDetails = {
+
+      production: {
+        title: "Production recovery",
+        commitmentId: "C2",
+        commitmentName: "Complete production by Saturday"
+      },
+
+      launch: {
+        title: "Launch recovery",
+        commitmentId: "C3",
+        commitmentName: "Launch product Monday"
+      },
+
+      customer_delivery: {
+        title: "Customer delivery recovery",
+        commitmentId: "C4",
+        commitmentName: "Deliver Customer A order Tuesday"
+      }
+
+    };
+
+
+    Object
+      .entries(
+        capabilityGroups
+      )
+      .forEach(
+        ([typeName, capabilities]) => {
+
+
+          const group =
+            document.createElement(
+              "div"
+            );
+
+
+          group.className =
+            "capability-group";
+
+
+          const detail =
+            typeDetails[typeName]
+            ||
+            {
+              title:
+                typeName
+                  .replaceAll(
+                    "_",
+                    " "
+                  ),
+              commitmentId: "—",
+              commitmentName: "Connected commitment"
+            };
+
+
+          group.innerHTML = `
+
+            <div class="capability-group-title">
+
+              <div class="capability-group-copy">
+
+                <div class="capability-group-main">
+
+                  <span>
+                    ${detail.title}
+                  </span>
+
+                  <span class="capability-affects">
+                    affects ${detail.commitmentId}
+                  </span>
+
+                </div>
+
+                <div class="capability-group-subtitle">
+                  ${detail.commitmentId} — ${detail.commitmentName}
+                </div>
+
+              </div>
+
+              <span class="capability-count">
+                ${capabilities.length} route${
+                  capabilities.length === 1
+                    ? ""
+                    : "s"
+                }
+              </span>
+
+            </div>
+
+            <div class="capability-list"></div>
+
+          `;
+
+
+          const list =
+            group.querySelector(
+              ".capability-list"
+            );
+
+
+          capabilities.forEach(
+            capability => {
+
+
+              const card =
+                document.createElement(
+                  "div"
+                );
+
+
+              card.className =
+                "recovery-capability-card";
+
+
+              card.dataset.capabilityId =
+                capability.id;
+
+
+              card.innerHTML = `
+
+                <div class="capability-name">
+
+                  <span>
+                    ${capability.name}
+                  </span>
+
+                  <span class="capability-id">
+                    ${capability.id}
+                  </span>
+
+                </div>
+
+
+                <div class="capability-meta">
+                  Recovery option for ${detail.commitmentId}
+                </div>
+
+
+                <div class="capability-fields">
+
+                  <div class="capability-field">
+
+                    <label>
+                      Cost ₹
+                    </label>
+
+                    <input
+                      class="capability-cost"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value="${capability.cost}">
+
+                  </div>
+
+
+                  <div class="capability-field">
+
+                    <label>
+                      Delay h
+                    </label>
+
+                    <input
+                      class="capability-delay"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value="${capability.delay_hours}">
+
+                  </div>
+
+                </div>
+
+              `;
+
+
+              list.appendChild(
+                card
+              );
+
+            }
+          );
+
+
+          capabilityContainer
+            .appendChild(
+              group
+            );
+
+        }
+      );
+
+
+    if (
+      !context.recovery_capabilities
+      ||
+      context.recovery_capabilities.length === 0
+    ) {
+
+      capabilityContainer.innerHTML = `
+
+        <div class="muted">
+
+          No recovery capabilities are available.
+
+        </div>
+
+      `;
+
+    }
+
+  }
+
+  catch (
+    error
+  ) {
+
+    console.error(
+      error
+    );
+
+
+    supplierContainer.innerHTML = `
+
+      <div class="muted">
+
+        Could not load company context.
+
+      </div>
+
+    `;
+
+
+    capabilityContainer.innerHTML = `
+
+      <div class="muted">
+
+        Could not load recovery capabilities.
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* ==========================================
+   SAVE COMPANY CONTEXT
+   ========================================== */
+
+async function saveCompanyContext() {
+
+  const statusBox =
+    byId(
+      "contextSaveStatus"
+    );
+
+
+  statusBox.className =
+    "muted context-status";
+
+
+  statusBox.textContent =
+    "Updating FalkorDB...";
+
+
+  try {
+
+
+    const budget =
+      Number(
+
+        byId(
+          "contextBudget"
+        ).value
+
+      );
+
+
+    if (
+      !Number.isFinite(
+        budget
+      )
+
+      ||
+
+      budget < 0
+    ) {
+
+      throw new Error(
+        "Enter a valid recovery budget."
+      );
+
+    }
+
+
+    /* --------------------------------------
+       SUPPLIERS
+       -------------------------------------- */
+
+    const suppliers =
+      [];
+
+
+    document
+      .querySelectorAll(
+        ".supplier-context-card"
+      )
+      .forEach(
+        card => {
+
+
+          const capacity =
+            Number(
+
+              card
+                .querySelector(
+                  ".context-capacity"
+                )
+                .value
+
+            );
+
+
+          const cost =
+            Number(
+
+              card
+                .querySelector(
+                  ".context-cost"
+                )
+                .value
+
+            );
+
+
+          const lead =
+            Number(
+
+              card
+                .querySelector(
+                  ".context-lead"
+                )
+                .value
+
+            );
+
+
+          if (
+            [
+              capacity,
+              cost,
+              lead
+            ]
+            .some(
+              value =>
+
+                !Number.isFinite(
+                  value
+                )
+
+                ||
+
+                value < 0
+            )
+          ) {
+
+            throw new Error(
+
+              `Check the values for ${
+                card.dataset.vendorId
+              }.`
+
+            );
+
+          }
+
+
+          suppliers.push({
+
+            id:
+              card.dataset.vendorId,
+
+            capacity:
+              capacity,
+
+            emergency_cost:
+              cost,
+
+            lead_time_hours:
+              lead
+
+          });
+
+
+        }
+      );
+
+
+    /* --------------------------------------
+       RECOVERY CAPABILITIES
+       -------------------------------------- */
+
+    const recoveryCapabilities =
+      [];
+
+
+    document
+      .querySelectorAll(
+        ".recovery-capability-card"
+      )
+      .forEach(
+        card => {
+
+
+          const cost =
+            Number(
+
+              card
+                .querySelector(
+                  ".capability-cost"
+                )
+                .value
+
+            );
+
+
+          const delay =
+            Number(
+
+              card
+                .querySelector(
+                  ".capability-delay"
+                )
+                .value
+
+            );
+
+
+          if (
+            [
+              cost,
+              delay
+            ]
+            .some(
+              value =>
+
+                !Number.isFinite(
+                  value
+                )
+
+                ||
+
+                value < 0
+            )
+          ) {
+
+            throw new Error(
+
+              `Check the values for ${
+                card.dataset.capabilityId
+              }.`
+
+            );
+
+          }
+
+
+          recoveryCapabilities.push({
+
+            id:
+              card.dataset.capabilityId,
+
+            cost:
+              cost,
+
+            delay_hours:
+              delay
+
+          });
+
+
+        }
+      );
+
+
+    const response =
+      await fetch(
+        `${API}/context`,
+        {
+
+          method:
+            "POST",
+
+          headers: {
+
+            "Content-Type":
+              "application/json"
+
+          },
+
+          body:
+            JSON.stringify({
+
+              recovery_budget:
+                budget,
+
+              suppliers:
+                suppliers,
+
+              recovery_capabilities:
+                recoveryCapabilities
+
+            })
+
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+
+        result.error
+        ||
+        "Context update failed."
+
+      );
+
+    }
+
+
+    await loadCompanyContext();
+
+    await loadGraph();
+
+
+    statusBox.className =
+      "context-status success";
+
+
+    statusBox.textContent =
+
+      "✓ Graph context updated. " +
+      "Run the disruption again " +
+      "to see the new decision.";
+
+  }
+
+  catch (
+    error
+  ) {
+
+    console.error(
+      error
+    );
+
+
+    statusBox.className =
+      "context-status error";
+
+
+    statusBox.textContent =
+      error.message;
+
+  }
+
+}
+
+
+/* ==========================================
+   RESTORE ORIGINAL DEMO DATA
+   ========================================== */
+
+async function restoreDemoContext() {
+
+  const statusBox =
+    byId(
+      "contextSaveStatus"
+    );
+
+
+  statusBox.className =
+    "muted context-status";
+
+
+  statusBox.textContent =
+    "Restoring demo defaults...";
+
+
+  try {
+
+
+    /*
+      This uses the SAME existing
+      POST /context route.
+
+      No extra backend restore
+      endpoint is required.
+    */
+
+    const response =
+      await fetch(
+        `${API}/context`,
+        {
+
+          method:
+            "POST",
+
+          headers: {
+
+            "Content-Type":
+              "application/json"
+
+          },
+
+          body:
+            JSON.stringify({
+
+              required_quantity:
+                100,
+
+              recovery_budget:
+                20000,
+
+              suppliers: [
+
+
+                {
+                  id:
+                    "V2",
+
+                  capacity:
+                    100,
+
+                  emergency_cost:
+                    30000,
+
+                  lead_time_hours:
+                    0
+                },
+
+
+                {
+                  id:
+                    "V3",
+
+                  capacity:
+                    60,
+
+                  emergency_cost:
+                    6000,
+
+                  lead_time_hours:
+                    6
+                },
+
+
+                {
+                  id:
+                    "V4",
+
+                  capacity:
+                    50,
+
+                  emergency_cost:
+                    4000,
+
+                  lead_time_hours:
+                    4
+                }
+
+
+              ],
+
+              recovery_capabilities: [
+
+                {
+                  id: "A1",
+                  cost: 8000,
+                  delay_hours: 8
+                },
+
+                {
+                  id: "A2",
+                  cost: 18000,
+                  delay_hours: 4
+                },
+
+                {
+                  id: "A3",
+                  cost: 24000,
+                  delay_hours: 2
+                },
+
+                {
+                  id: "A4",
+                  cost: 6000,
+                  delay_hours: 4
+                },
+
+                {
+                  id: "A5",
+                  cost: 2000,
+                  delay_hours: 18
+                },
+
+                {
+                  id: "A6",
+                  cost: 7000,
+                  delay_hours: 2
+                },
+
+                {
+                  id: "A7",
+                  cost: 4500,
+                  delay_hours: 5
+                }
+
+              ]
+
+            })
+
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+
+        result.error
+        ||
+        "Could not restore demo defaults."
+
+      );
+
+    }
+
+
+    await loadCompanyContext();
+
+    await loadGraph();
+
+
+    statusBox.className =
+      "context-status success";
+
+
+    statusBox.textContent =
+      "✓ Demo company context restored.";
+
+  }
+
+  catch (
+    error
+  ) {
+
+    console.error(
+      error
+    );
+
+
+    statusBox.className =
+      "context-status error";
+
+
+    statusBox.textContent =
+      error.message;
+
+  }
+
+}
+
+
+/* ==========================================
+   START
+   ========================================== */
+
+async function start() {
+
+  try {
+
+    await loadCommitments();
+
+    await loadGraph();
+
+  }
+
+  catch (
+    error
+  ) {
+
+    console.error(
+      error
+    );
+
+
+    byId(
+      "graphInfo"
+    ).textContent =
+
+      "Could not load PromiseGraph data. " +
+      "Check that the backend is running " +
+      "on port 8000.";
+
+  }
+
+}
+
+
+start();
+
+
+</script>
+
+</body>
+</html>
